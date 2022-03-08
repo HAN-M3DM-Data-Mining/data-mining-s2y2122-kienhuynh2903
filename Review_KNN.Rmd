@@ -1,0 +1,123 @@
+---
+title: "Assigment - kNN - dataset HCV"
+author: "Dang Nguyen" 
+#Author review: Kien Huynh Trung
+date: "28/02/2022"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
+---
+title: "Assigment - kNN - dataset HCV"
+author: "Dang Nguyen" 
+#Author review: Kien Huynh Trung
+date: "8/03/2022"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(class)
+library(caret)
+library(magrittr)
+library(plotly)
+```
+
+---
+## A. Business understanding
+The data set contains laboratory values of blood donors, Hepatitis C patients and their demographic values.
+
+## B. Data Understanding
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-hcvdat0.csv"
+rawDF <- read_csv(url, )
+str(rawDF)
+```
+
+## C. Data Preparation
+### 1. Data cleaning
+```{r}
+cleanDF <- rawDF[-1] 
+head(cleanDF)
+```
+#Kien: "na.omit" function has been removed (line 43).However it does not affect the final outcome as well as the accuracy of the algorithm.But it is indeed a good idea to use "na.omit" function to remove all of the incomplete cases.Hence, improve the accuracy of the algorithm. such a crucial step of data cleaning :>
+
+### 2. Setting labels to category types (defined as either "Donor" or "Hepatitis")
+```{r}
+cleanDF$Category <- factor(cleanDF$Category)
+levels(cleanDF$Category) <- c("Donor", "Donor", "Hepatitis", "Hepatitis", "Hepatitis")
+levels(cleanDF$Category)
+table(cleanDF$Category)
+```
+
+### 3. Visualizing an inspection between ALB and ALP
+```{r}
+p1 <- ggplot(cleanDF) +
+  geom_point(aes(ALB, ALP, colour = Category))
+p1
+```
+
+
+## D. Normalize numeric features
+### 1. Setting a function 
+```{r}
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x))) 
+}
+```
+#Kien: nothing was sabotaged here, but just want to say that normalizing data is crucial in data mining. Since the dataset has a lot of numeric variables from varius ranges. He used min-max normalization here to turn the values into values between 0 and 1. Normalization just makes sense!
+
+### 2. Testing the function 
+```{r}
+testSet1 <- c(1:5)
+testSet2 <- c(1:5) * 10
+cat("testSet1:", testSet1, "\n")
+cat("Normalized testSet1:", normalize(testSet1), "\n")
+cat("testSet2:", testSet2, "\n")
+cat("Normalized testSet2:", normalize(testSet2), "\n")
+```
+
+
+```{r}
+nCols <- dim(cleanDF)[2]
+cleanDFnorm <- sapply(4:nCols,
+                    function(x) {
+  normalize(cleanDF[, x])
+}) %>% as.data.frame()
+head(cleanDFnorm)
+```
+
+## E.Preparing train and test datasets
+```{r}
+#Splitting training and test data sets
+trainDF_feat <- cleanDFnorm [1:469,  ]
+testDF_feat <- cleanDFnorm [470:589,  ]
+#Creating training and test data sets with labels
+trainDF_labels <- cleanDFnorm [1:469,  1]
+testDF_labels <- cleanDFnorm [470:569,  1]
+```
+#Kien: comparing to the original file, this part was "sabotaged" (or I might say "simplified"). However, according to the dataset, the "Blood Donor" occupies 86% which significantly dominate other samples. It creates a bias of the dataset which may affect the accuracy of the algorithm. Using the "sample" function might solve this problem according to the original file.
+
+## F. Modeling and Evaluation
+```{r}
+cleanDFpred <- knn(train = as.matrix(trainDFfeat), test = as.matrix(testDFfeat), cl = as.matrix(trainDFlabels), k = 7)
+head(cleanDFpred)
+confusionMatrix(cleanDFpred, testDFlabels[[1]], positive = NULL, dnn = c("Prediction", "True"))
+dim(cleanDFpred)
+dim(testDFlabels)
+```
+#Kien: 97% of accuracy with k = 7. Surprisingly, when I chose k = sqrt(obs) or 24, the accuracy of the algorithm decreased to 92%.
+
+## G. Evaluation and Deployment
+k = 7 seems to provide the best accuracy in this example. Yet I do not know why after trying a few times.
+
+Kien: I've done a bit of research of how to find "k" and it is a bit confuse to choose a proper k value for KNN. 
+
+Kien: The common way to choose k value is to take the squareroot of the total observations (in our case it is sqrt(586) = 24).
+
+Kien: But I think it is a good idea to open a discussion about this. 
+
+Maybe you want to read this article about choosing a proper k value: https://towardsdatascience.com/how-to-find-the-optimal-value-of-k-in-knn-35d936e554eb
