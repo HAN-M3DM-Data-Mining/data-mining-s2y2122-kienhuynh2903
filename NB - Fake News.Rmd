@@ -17,6 +17,7 @@ library(caret)
 library(wordcloud)
 library(e1071)
 library(dplyr)
+library(SnowballC)
 ```
 ---
 NB-fakenews.csv
@@ -29,17 +30,19 @@ Identify fake news using Naive Bayes model.
 url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-kienhuynh2903/master/datasets/NB-fakenews.csv"
 rawDF <- read.csv (url)
 rawDF<- rawDF[-c(1:15000),]
+head (rawDF)
+str (rawDF)
 rawDF$id <- NULL 
 rawDF$title <- NULL
 rawDF$author <- NULL
 rawDF <- rawDF %>% relocate(label, .before = text)
 rawDF <- mutate(rawDF, label = recode(label,"0"= "ham", "1"= "spam"))
-head (rawDF)
 rawDF$label <- rawDF$label %>% factor %>% relevel("spam")
 class(rawDF$label)
 
 spam <- rawDF %>% filter(label == "spam")
 ham <- rawDF %>% filter(label == "ham")
+rawDF$text <- gsub("the","",as.character(rawDF$text))
 
 wordcloud (spam$text, max.words = 20, scale = c(4, 0.8), colors= c("indianred1","indianred2","indianred3","indianred"))
 wordcloud (ham$text, max.words = 20, scale = c(4, 0.8), colors= c("lightsteelblue1","lightsteelblue2","lightsteelblue3","lightsteelblue"))
@@ -53,22 +56,8 @@ inspect(rawCorpus[1:3])
 cleanCorpus <- rawCorpus %>% tm_map(tolower) %>% tm_map(removeNumbers)
 cleanCorpus <- cleanCorpus %>% tm_map(tolower) %>% tm_map(removeWords, stopwords()) %>% tm_map(removePunctuation)
 cleanCorpus <- cleanCorpus %>% tm_map(stripWhitespace)
+cleanCorpus <- cleanCorpus %>% tm_map(stemDocument)
 cleanCorpus <- tm_map(cleanCorpus, removeWords, stopwords("english"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("the"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("we"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("also"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("will"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("one"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("said"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("just"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("even"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("a"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("an"))
-cleanCorpus <- cleanCorpus %>% tm_map(removeWords,("like"))
-
-wordcloud (spam$text, max.words = 20, scale = c(4, 0.8), colors= c("indianred1","indianred2","indianred3","indianred"))
-wordcloud (ham$text, max.words = 20, scale = c(4, 0.8), colors= c("lightsteelblue1","lightsteelblue2","lightsteelblue3","lightsteelblue"))
-gc()
 
 tibble(Raw = rawCorpus$content[1:3], Clean = cleanCorpus$content[1:3])
 
@@ -88,7 +77,8 @@ testCorpus <- cleanCorpus[-trainIndex]
 trainDTM <- cleanDTM[trainIndex, ]
 testDTM <- cleanDTM[-trainIndex, ]
 
-freqWords <- trainDTM %>% findFreqTerms(500)
+freqWords <- trainDTM %>% findFreqTerms(5000)
+
 trainDTM <-  DocumentTermMatrix(trainCorpus, list(dictionary = freqWords))
 testDTM <-  DocumentTermMatrix(testCorpus, list(dictionary = freqWords))
 
@@ -111,7 +101,7 @@ confusionMatrix(predVec, testDF$label, positive = "spam", dnn = c("Prediction", 
 
 ```
 ## Evaluation and Deployment
-The model gives the result of 72.8 percent of accuracy level. I tried to remove unneccessary words but it seems not to be helpful. 
+The model gives the result of 77.6 percent of accuracy level. I tried to remove unnecessary words but it seems not to be helpful. 
 
 Hence, the reviewer may add suggestion to improve the model. 
 
@@ -119,27 +109,26 @@ Hence, the reviewer may add suggestion to improve the model.
 Confusion Matrix and Statistics
 
           True
-Prediction spam  ham
-      spam 2106  913
-      ham   497 1683
+Prediction spam ham
+      spam  553 149
+      ham   175 572
                                           
-               Accuracy : 0.7288          
-                 95% CI : (0.7165, 0.7408)
-    No Information Rate : 0.5007          
-    P-Value [Acc > NIR] : < 2.2e-16       
+               Accuracy : 0.7764          
+                 95% CI : (0.7541, 0.7976)
+    No Information Rate : 0.5024          
+    P-Value [Acc > NIR] : <2e-16          
                                           
-                  Kappa : 0.4575          
+                  Kappa : 0.5529          
                                           
- Mcnemar's Test P-Value : < 2.2e-16       
+ Mcnemar's Test P-Value : 0.1649          
                                           
-            Sensitivity : 0.8091          
-            Specificity : 0.6483          
-         Pos Pred Value : 0.6976          
-         Neg Pred Value : 0.7720          
-             Prevalence : 0.5007          
-         Detection Rate : 0.4051          
-   Detection Prevalence : 0.5807          
-      Balanced Accuracy : 0.7287          
+            Sensitivity : 0.7596          
+            Specificity : 0.7933          
+         Pos Pred Value : 0.7877          
+         Neg Pred Value : 0.7657          
+             Prevalence : 0.5024          
+         Detection Rate : 0.3816          
+   Detection Prevalence : 0.4845          
+      Balanced Accuracy : 0.7765          
                                           
-       'Positive' Class : spam            
-                                          
+       'Positive' Class : spam             
