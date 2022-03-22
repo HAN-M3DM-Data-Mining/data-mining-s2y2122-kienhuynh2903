@@ -116,3 +116,31 @@ The model gives the result of 72.8 percent of accuracy level. I tried to remove 
 
 Hence, the reviewer may add suggestion to improve the model. 
 
+## Final Result
+Confusion Matrix and Statistics
+
+          True
+Prediction spam  ham
+      spam 2106  913
+      ham   497 1683
+                                          
+               Accuracy : 0.7288          
+                 95% CI : (0.7165, 0.7408)
+    No Information Rate : 0.5007          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.4575          
+                                          
+ Mcnemar's Test P-Value : < 2.2e-16       
+                                          
+            Sensitivity : 0.8091          
+            Specificity : 0.6483          
+         Pos Pred Value : 0.6976          
+         Neg Pred Value : 0.7720          
+             Prevalence : 0.5007          
+         Detection Rate : 0.4051          
+   Detection Prevalence : 0.5807          
+      Balanced Accuracy : 0.7287          
+                                          
+       'Positive' Class : spam            
+                                          
