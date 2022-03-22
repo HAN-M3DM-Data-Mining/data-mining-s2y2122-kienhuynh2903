@@ -28,8 +28,6 @@ Identify fake news using Naive Bayes model.
 ```{r}
 url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-kienhuynh2903/master/datasets/NB-fakenews.csv"
 rawDF <- read.csv (url)
-head (rawDF)
-str (rawDF)
 rawDF$id <- NULL 
 rawDF$title <- NULL
 rawDF$author <- NULL
