@@ -1,0 +1,142 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+---
+#Hi guys, please copy the file and open up a new workbook if you would like to add stuff. To my best knowledge this is what we need to do and plot the Graphs on Excel afterwards. The Excel file can be found in Drive and the numbers we will use are in there.
+
+## installing the packages
+```{r}
+install.packages("tidyverse")
+install.packages("matrixStats")
+```
+
+## Opening the libraries
+```{r}
+library(tidyverse)
+library(matrixStats)
+```
+
+# Data to convert into dataframe
+```{r}
+student = c("a","b","c","d","e","f","g","h","i","j","k")
+C1 = c(6,8,9,2,7,4,7,10,6,3,2)
+C2 = c(8,7,10,10,10,9,9,10,6,7,7)
+C3 = c(7,4,5,8,10,9,6,5,8,6,6)
+C4 = c(3,3,2,2,8,4,7,9,2,7,3)
+C5 = c(5,5,7,5,5,8,8,7,4,6,4)
+C6 = c(8,10,8,8,8,8,9,9,9,8,NA)
+
+```
+
+## Create a data frame
+```{r}
+student_frame <- data.frame(student,C1,C2,C3,C4,C5,C6,
+                            stringsAsFactors = FALSE)
+student_frame
+```
+
+## Adding Rowsum, RowMean, ColSum, ColMean and RowStDev, and ColStDev
+```{r}
+student_frame1 <- unlist(lapply(student_frame, is.numeric)) # Subset containing numeric columns
+student_frame1
+```
+#RowSum and RowMean
+```{r}
+student_frame2 <- cbind(student_frame[,student_frame1],# Add rowSums & rowMeans to student_frame
+                   rowSums = rowSums(student_frame[,student_frame1], na.rm = TRUE),
+                   rowMeans = rowMeans(student_frame[,student_frame1], na.rm = TRUE))
+view(student_frame2)
+```
+#ColSum and ColMean
+```{r}
+student_frame3 <- rbind(student_frame2,# Add colSums & colMeans to data
+                   c(colSums(student_frame[,student_frame1]), na.rm = TRUE, NA, NA),
+                   c(colMeans(student_frame[,student_frame1]), na.rm = TRUE, NA, NA)) 
+#Problem: Rsums 12/13 display 1, also no sum C6
+view(student_frame3)
+```
+#Standard Deviation Row
+```{r}
+student_frame4 <- student_frame3%>% #Add STDEV
+  mutate(STDEV=rowSds(as.matrix(.[c("C1","C2","C3","C4","C5","C6")], na.rm=TRUE)))
+#Problem: NA for row 11 (,na.rm=TRUE mistake?)
+view(student_frame4)
+```
+#Standard Deviation Col
+```{r}
+sapply(student_frame4[c("C1","C2","C3","C4","C5","C6")], na.rm=TRUE, sd)
+#Still trying to get these answers into the column below, also sum needs to be left out
+```
+
+## Adding the skewness, kurtosis to the rows
+```{r}
+
+```
+
+## Adding the skewness, kurtosis to the columns
+```{r}
+
+```
+
+## Create a histogram in numbers of marks
+```{r}
+
+```
+
+## Create a histogram in %
+```{r}
+
+```
+
+## Create a graph with the overall distribution of marks
+```{r}
+
+```
+
+## Create a graph with the overall distribution of marks in %
+```{r}
+
+```
+
+## Create a graph with the mean grade by student
+```{r}
+
+```
+
+## Create a graph with the mean grade by course
+```{r}
+
+```
+
+## Create a graph with the std of grades by student
+```{r}
+
+```
+
+## Create a graph with the std of grades by course
+```{r}
+
+```
+
+## Create a graph with the skewness of grades by student
+```{r}
+
+```
+
+## Create a graph with the skewness of grades by course
+```{r}
+
+```
+
+## Create a graph with the kurtosis of grades by student
+```{r}
+
+```
+
+## Create a graph with the kurtosis of grades by course
+```{r}
+
+```
+
+
