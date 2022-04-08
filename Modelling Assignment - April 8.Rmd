@@ -1,0 +1,234 @@
+## Packages loading
+```{r}
+library (ggplot2)
+library (tidyverse)
+library (plyr)
+library (car)
+library (corrr)
+library (apaTables)
+library (texreg)
+library (rmarkdown)
+library (caret)
+library (dplyr)
+library (fastDummies)
+```
+
+# Assignment 1
+## Data preparation
+```{r}
+url <- ("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-kienhuynh2903/master/641543Turnover.csv")
+
+rawDF1 <- read.csv (url)
+
+rawDF1$Social_drinker <- NULL
+rawDF1$Pets <- NULL
+
+under40 <- rawDF1 %>% 
+  group_by(Age) %>% 
+  filter(Age < 40)
+
+above40 <- rawDF1 %>% 
+  group_by(Age) %>% 
+  filter (Age >= 40)
+```
+## Multicollinearity check
+```{r}
+multi_corr <- correlate(rawDF1[-2], method = "pearson", diagonal = 1)
+multi_corr %>% 
+  gather(-term, key = "colname", value = "multi_corr") %>% 
+  filter(abs(multi_corr) > 0.8, abs(multi_corr) < 1) 
+# BMI and Weight is highly correlated to each other. Hence, I'll remove BMI out of the model. 
+```
+## Modelling 
+```{r}
+multi_fit <- lm(Months_active ~ scale(Weight) + Social_smoker + scale(Age) + scale(Disciplined) + scale(Absent_hours) + scale(Height) + Children, data=rawDF1)
+summary (multi_fit)
+
+above40_fit <- lm(Months_active ~ scale(Weight) + Social_smoker + scale(Age) + scale(Disciplined) + scale(Absent_hours) + scale(Height) + Children, data=above40)
+
+under40_fit <- lm(Months_active ~ scale(Weight) + Social_smoker + scale(Age) + scale(Disciplined) + scale(Absent_hours) + scale(Height) + Children, data=under40)
+
+wordreg(list(multi_fit, above40_fit, under40_fit), file="Assignment 1.doc")
+
+```
+
+# Assignment 2
+## Data preparation
+```{r}
+url <- ("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-kienhuynh2903/master/641543cancer_rates.csv")
+
+rawDF2 <- read.csv (url)
+rawDF2$Geography <- NULL
+head (rawDF2)
+
+```
+## Multicollinearity check
+```{r}
+multi_corr2 <- correlate(rawDF2[-1], method = "pearson", diagonal = 1)
+multi_corr2 %>% 
+  gather(-term, key = "colname", value = "multi_corr2") %>% 
+  filter(abs(multi_corr2) > 0.8, abs(multi_corr2) < 1)
+## Nothing is weird here. 
+```
+## Modelling
+```{r}
+model_assignment2 <- lm(CancerDeaths~  
+                         scale(PercentMarried)+ 
+                         scale(popEst2015)+ 
+                         scale(BirthRate)+ 
+                         scale(povertyPercent)+ 
+                         scale(PctUnemployed16_Over)+
+                         scale(MedianAge)+
+                         scale(AvgHouseholdSize), data=rawDF2)
+```
+## Outliers check
+```{r}
+cooksD <- cooks.distance (model_assignment2)
+n <- nrow(rawDF2)
+outliers <- as.numeric(names(cooksD)[(cooksD > (4/n))])
+rawDF2_outliers <- rawDF2[-outliers,]
+```
+## Model without outliers
+```{r}
+model_assignment2_outlr <- lm(CancerDeaths~  
+                         scale(PercentMarried)+ 
+                         scale(popEst2015)+ 
+                         scale(BirthRate)+ 
+                         scale(povertyPercent)+ 
+                         scale(PctUnemployed16_Over)+
+                         scale(MedianAge)+
+                         scale(AvgHouseholdSize), data=rawDF2_outliers)
+
+wordreg(list(model_assignment2, model_assignment2_outlr), file="Assignment 2.doc")
+```
+
+# Assignment 3
+## Data preparation
+```{r}
+url <- ("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-kienhuynh2903/master/641543diamonds.csv")
+
+rawDF3 <- read.csv(url)
+rawDF3$ID <- NULL
+set.seed(1234)
+
+idx <- sample (nrow(rawDF3), nrow(rawDF3)*0.75)
+
+price_train <- rawDF3 [idx,]
+price_test <- rawDF3 [-idx,]
+```
+## Modelling
+```{r}
+model_assignment3 <- lm(price~
+                          carat+
+                          depth+
+                          continent, data=price_train) #train
+model_summ <- summary (model_assignment3) # R-squared is 0.85
+model_summ
+res <- residuals(model_assignment3)
+res <- as.data.frame(res)
+ggplot(res,aes(res)) +  geom_histogram(fill='green',alpha=0.5)
+plot (model_assignment3)
+
+pre3 <- predict (model_assignment3, newdata=price_test) #test
+pre3[3]
+
+wordreg(model_assignment3,file="Assignment3.doc")
+
+```
+
+## MSE and MAD
+```{r}
+MSE <- mean(model_summ$residuals^2)
+MAD <- mean(abs(price_test$price - pre3)) #I tried to use the function mad() but it's not working :<
+
+cat("The MSE is:", MSE, "and", "The MAD is:", MAD) 
+```
+
+# Assignment 4
+## Data preparation
+```{r}
+url <- ("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-kienhuynh2903/master/641543Life_Expectancy.csv")
+
+rawDF4 <- read.csv (url)
+```
+## Modelling
+### Life_expectancy~HIV
+```{r}
+ggplot(data = rawDF4, aes(x = HIV, y = Life_expectancy)) + geom_point() + geom_smooth()
+#A decreasing decrease. Then use log() to improve the R-squared.
+
+model_HIV1 <- lm(Life_expectancy~HIV, data=rawDF4)
+summary (model_HIV1) #R-squared: 0.4
+
+model_HIV2 <- lm(Life_expectancy~log(HIV), data=rawDF4)
+summary (model_HIV2) #R-squared: 0.63 (acceptable)
+```
+### Life_expectancy~Healthcare
+```{r}
+ggplot(data = rawDF4, aes(x = Healthcare, y = Life_expectancy)) + geom_point() + geom_smooth()
+#A polynomial with the term of 3. Then use poly().
+
+model_Healthcare1 <- lm(Life_expectancy~Healthcare, data=rawDF4)
+summary (model_Healthcare1) #R-squared: 0.1 (:<)
+
+model_Healthcare2 <- lm(Life_expectancy~poly(Healthcare,3), data=rawDF4)
+summary (model_Healthcare2) #R-squared: 0.16. Cool! 
+```
+### Life_expectancy~BMI
+```{r}
+ggplot(data = rawDF4, aes(x = BMI, y = Life_expectancy)) + geom_point() + geom_smooth()
+# Polynomial again. Term of 3 as well. 
+
+model_BMI1 <- lm(Life_expectancy~BMI, data=rawDF4)
+summary (model_BMI1) #R-squared: 0.22 (too low :<)
+
+model_BMI2 <- lm(Life_expectancy~poly(BMI,3), data=rawDF4)
+summary (model_BMI2) #R-squared: 0.43 (much better, pheww)
+```
+### Life_expectancy~Schooling
+```{r}
+ggplot(data = rawDF4, aes(x = Schooling, y = Life_expectancy)) + geom_point() + geom_smooth()
+# I guess it is polynomial (term 3). Let's see.
+
+model_Schooling1 <- lm(Life_expectancy~Schooling, data=rawDF4)
+summary (model_Schooling1) #R-squared: 0.68 (acceptable)
+
+model_Schooling2 <- lm(Life_expectancy~poly(Schooling,3), data=rawDF4)
+summary (model_Schooling2) #R-squared: 0.71 (slightly improved, it works LOL)
+```
+### Reporting
+```{r}
+wordreg(list(model_HIV1, model_HIV2), 
+        file="Assignment 4 - HIV.doc")
+
+wordreg(list(model_Healthcare1, model_Healthcare2), 
+        file="Assignment 4 - Healthcare")
+
+wordreg(list(model_BMI1, model_BMI2), 
+        file="Assignment 4 - BMI")
+
+wordreg(list(model_Schooling1, model_Schooling2), 
+        file="Assignment 4 - Schooling")
+```
+
+# Assignment 5
+## Data preparation
+```{r}
+rawDF5 <- read.csv("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-kienhuynh2903/master/641543TeachingRatings.csv")
+
+cleanDF5 <- dummy_cols(rawDF5, select_columns = "minority")
+cleanDF5 <- dummy_cols(cleanDF5, select_columns = "gender")
+cleanDF5 <- dummy_cols(cleanDF5, select_columns = "tenure")
+```
+
+## Model with missing values
+```{r}
+model_assignment5 <- lm(eval~scale(age)+scale(beauty)+minority_yes+gender_female+tenure_yes, data=cleanDF5)
+
+summary (model_assignment5)
+```
+
+## Reporting
+```{r}
+wordreg(model_assignment5, file="Assignment 5.doc")
+```
